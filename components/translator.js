@@ -6,22 +6,27 @@ const britishToAmericanSpelling = require("./british-to-american-spelling.js");
 const britishToAmericanTitles = require("./british-to-american-titles.js");
 
 class Translator {
+  #spanify(token) {
+    return `<span class="highlight">${token}</span>`;
+  }
+
   #translateTime(token, from, to) {
     const i = token.indexOf(from);
-    return token.slice(0, i) + to + token.slice(i + 1);
+    const translated = token.slice(0, i) + to + token.slice(i + 1);
+    return this.#spanify(translated);
   }
 
   #translateAmToBr(text) {
     let idiomsTranslated = text;
     Object.entries(americanOnly).forEach(([k, v]) => {
       const regex = new RegExp(k, "gi");
-      idiomsTranslated = idiomsTranslated.replace(regex, v);
+      idiomsTranslated = idiomsTranslated.replace(regex, this.#spanify(v));
     });
 
     const timeRegex = /^\d{1,2}[:]\d{2}/;
     const translation = idiomsTranslated
       .split(" ")
-      .map((token) => {
+      .map((token, index) => {
         if (timeRegex.test(token)) {
           return this.#translateTime(token, ":", ".");
         }
@@ -30,25 +35,26 @@ class Translator {
           const newTitle = americanToBritishTitles[tokenLowerCase];
           const capitalized =
             newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
-          return capitalized;
+          return this.#spanify(capitalized);
         }
         if (americanToBritishSpelling[tokenLowerCase]) {
-          const newSpelling = americanToBritishSpelling[tokenLowerCase];
-          return newSpelling;
+          let newSpelling = americanToBritishSpelling[tokenLowerCase];
+          if (index === 0)
+            newSpelling =
+              newSpelling.charAt(0).toUpperCase() + newSpelling.slice(1);
+          return this.#spanify(newSpelling);
         }
         return token;
       })
-      .join("");
-    const capitalizedSentenceStart =
-      translation.charAt(0).toUpperCase() + translation.slice(1);
-    return capitalizedSentenceStart;
+      .join(" ");
+    return translation;
   }
 
   #translateBrToAm(text) {
     let idiomsTranslated = text;
     Object.entries(britishOnly).forEach(([k, v]) => {
       const regex = new RegExp(k, "gi");
-      idiomsTranslated = idiomsTranslated.replace(regex, v);
+      idiomsTranslated = idiomsTranslated.replace(regex, this.#spanify(v));
     });
 
     const timeRegex = /^\d{1,2}[.]\d{2}/;
@@ -63,18 +69,19 @@ class Translator {
           const newTitle = britishToAmericanTitles[tokenLowerCase];
           const capitalized =
             newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
-          return capitalized;
+          return this.#spanify(capitalized);
         }
         if (britishToAmericanSpelling[tokenLowerCase]) {
-          const newSpelling = britishToAmericanSpelling[tokenLowerCase];
-          return newSpelling;
+          let newSpelling = britishToAmericanSpelling[tokenLowerCase];
+          if (index === 0)
+            newSpelling =
+              newSpelling.charAt(0).toUpperCase() + newSpelling.slice(1);
+          return this.#spanify(newSpelling);
         }
         return token;
       })
-      .join("");
-    const capitalizedSentenceStart =
-      translation.charAt(0).toUpperCase() + translation.slice(1);
-    return capitalizedSentenceStart;
+      .join(" ");
+    return translation;
   }
 
   translate(text, locale) {
